@@ -1,4 +1,4 @@
-.PHONY: build server tagger grpc-update deploy-classifier stop-classifier vite web dump-channel
+.PHONY: build server tagger grpc-update deploy-classifier stop-classifier vite web dump-channel update-confirm
 
 BACKUP_DIR = ./data/db_backup
 DATE := $(shell date +%Y%m%d)
@@ -19,7 +19,10 @@ update-channels:
 	python admin/admin.py --update-channels-from Teledeck
 
 update:
-	python admin/admin.py --client-update
+	python admin/admin.py --client-update $(if $(CHANNEL_PATTERN),--channel-pattern "$(CHANNEL_PATTERN)",)
+
+update-confirm:
+	python admin/admin.py --client-update --confirm-update $(if $(CHANNEL_PATTERN),--channel-pattern "$(CHANNEL_PATTERN)",)
 
 recycle:
 	rm recyclebin/media/*
@@ -60,5 +63,5 @@ web:
 	cp -r web/dist server/internal/service/web/
 
 dlsize:
-	du -sh static/media
-	du -sh static/thumbnails
+	du -sh /mnt/vhdx-storage/teledeck/static/media
+	du -sh /mnt/vhdx-storage/teledeck/static/thumbnails
