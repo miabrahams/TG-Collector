@@ -10,9 +10,9 @@ const queryKeys = {
   },
   media: {
     item: (id: string) =>
-      ['gallery', 'item', id] as const,
+      ['mediaItem', id] as const,
     thumbnail: (id: string) =>
-      ['gallery', 'thumbnail', id] as const
+      ['thumbnail', id] as const
   },
   user: {
     me: ['user'] as const

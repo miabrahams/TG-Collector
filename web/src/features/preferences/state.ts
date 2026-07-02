@@ -1,90 +1,71 @@
-import { atom, getDefaultStore } from 'jotai'
-import { atomWithStorage, createJSONStorage  } from 'jotai/utils';
-import { SortOption, FavoriteOption } from '@shared/types/preferences';
+import { createEffect, createMemo, createSignal, Setter } from 'solid-js';
 import { defaultPreferences } from './constants';
+import { FavoriteOption, SearchPreferences, SortOption, ViewPreferences } from '@shared/types/preferences';
 
-const storage = createJSONStorage<any>(() => localStorage)
-const opts = { getOnInit: true }
-export const sortModeAtom = atomWithStorage<SortOption>('sortMode', 'date_desc', storage, opts)
-export const videosOnlyAtom = atomWithStorage<boolean>('videosOnly', false, storage, opts)
-export const favoritesAtom = atomWithStorage<FavoriteOption>('showFavorites', 'all', storage, opts)
-export const searchStringAtom = atomWithStorage<string>('searchString', '', storage, opts)
-export const darkModeAtom = atomWithStorage<boolean>('darkmode', true, storage, opts)
-export const hideInfoAtom = atomWithStorage<boolean>('hideinfo', false, storage, opts)
+type SignalUpdate<T> = T | ((previous: T) => T);
 
+const readStoredValue = <T,>(key: string, fallback: T): T => {
+  if (typeof localStorage === 'undefined') return fallback;
 
-export const searchPrefsAtom = atom(
-  (get) => {return {
-    sort: get(sortModeAtom),
-    videos: get(videosOnlyAtom),
-    favorites: get(favoritesAtom),
-    search: get(searchStringAtom),
-}},
-  (_, set, key: string, value: any) => {
-    switch (key) {
-      case 'sort':
-        return set(sortModeAtom, value);
-      case 'videos':
-        return set(videosOnlyAtom, value);
-      case 'favorites':
-        return set(favoritesAtom, value);
-      case 'search':
-        return set(searchStringAtom, value);
-      default:
-        console.error(`Invalid search preference key: ${key}`);
-    }
-})
+  const stored = localStorage.getItem(key);
+  if (stored === null) return fallback;
 
-export const viewPrefsAtom = atom(
-  (get) => {return {
-    darkmode: get(darkModeAtom),
-    hideinfo: get(hideInfoAtom),
-}},
-  (_, set, key: string, value: any) => {
-    switch (key) {
-      case 'darkmode':
-        return set(darkModeAtom, value);
-      case 'hideinfo':
-        return set(hideInfoAtom, value);
-      default:
-        console.error(`Invalid view preference key: ${key}`);
-    }
-})
+  try {
+    return JSON.parse(stored) as T;
+  } catch {
+    return stored as T;
+  }
+};
 
+const createLocalStorageSignal = <T,>(key: string, fallback: T) => {
+  const [value, setValue] = createSignal<T>(readStoredValue(key, fallback));
+  const setStoredValue: Setter<T> = ((next: SignalUpdate<T>) => {
+    return setValue((previous) => {
+      const updater = next as SignalUpdate<T>;
+      const resolved = typeof updater === 'function'
+        ? (updater as (previousValue: T) => T)(previous)
+        : updater;
 
-export const prefsAtom = atom(
-  (get) => {return {
-      search: get(searchPrefsAtom),
-      view: get(viewPrefsAtom),
-    }
-  },
-  (_, set, key: string, value: any) => {
-    if (key in defaultPreferences.search) {
-      return set(searchPrefsAtom, key, value);
-    }
-    else if (key in defaultPreferences.view) {
-      return set(viewPrefsAtom, key, value);
-    }
-    else {
-      console.error(`Invalid preference key: ${key}`);
-    }
-})
+      localStorage.setItem(key, JSON.stringify(resolved));
+      return resolved as T extends (...args: never[]) => unknown ? never : T;
+    });
+  }) as Setter<T>;
 
-const defaultStore = getDefaultStore();
+  return [value, setStoredValue] as const;
+};
 
-defaultStore.sub(darkModeAtom, () => {
-    defaultStore.get(darkModeAtom) ?
-        document.documentElement.classList.add('dark')
-      : document.documentElement.classList.remove('dark');
-});
+export const [sortMode, setSortMode] = createLocalStorageSignal<SortOption>('sortMode', defaultPreferences.search.sort);
+export const [videosOnly, setVideosOnly] = createLocalStorageSignal<boolean>('videosOnly', defaultPreferences.search.videos);
+export const [favoritesMode, setFavoritesMode] = createLocalStorageSignal<FavoriteOption>('showFavorites', defaultPreferences.search.favorites);
+export const [searchString, setSearchString] = createLocalStorageSignal<string>('searchString', defaultPreferences.search.search);
+export const [darkMode, setDarkMode] = createLocalStorageSignal<boolean>('darkmode', defaultPreferences.view.darkmode);
+export const [hideInfo, setHideInfo] = createLocalStorageSignal<boolean>('hideinfo', defaultPreferences.view.hideinfo);
 
-defaultStore.sub(hideInfoAtom, () => {
-    defaultStore.get(hideInfoAtom) ?
-        document.documentElement.classList.add('hide-info')
-      : document.documentElement.classList.remove('hide-info');
-});
+export const searchPreferences = createMemo<SearchPreferences>(() => ({
+  sort: sortMode(),
+  videos: videosOnly(),
+  favorites: favoritesMode(),
+  search: searchString(),
+}));
 
-// See if this works
-defaultStore.sub(prefsAtom, () => {
-  localStorage.setItem('userPreferences', JSON.stringify(defaultStore.get(prefsAtom)));
-});
+export const viewPreferences = createMemo<ViewPreferences>(() => ({
+  darkmode: darkMode(),
+  hideinfo: hideInfo(),
+}));
+
+export const installPreferenceEffects = () => {
+  createEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode());
+  });
+
+  createEffect(() => {
+    document.documentElement.classList.toggle('hide-info', hideInfo());
+  });
+
+  createEffect(() => {
+    localStorage.setItem('userPreferences', JSON.stringify({
+      search: searchPreferences(),
+      view: viewPreferences(),
+    }));
+  });
+};

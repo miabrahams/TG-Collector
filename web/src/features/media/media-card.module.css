@@ -1,0 +1,47 @@
+.card {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.cardHover {
+  transform: translateY(-2px);
+}
+
+.mediaFit {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.videoOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.3);
+  transition: background-color 160ms ease;
+}
+
+.videoOverlayClear {
+  background: transparent;
+}
+
+.actionBar {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.actionBarVisible {
+  opacity: 1;
+}

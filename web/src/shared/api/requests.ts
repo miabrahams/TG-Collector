@@ -54,6 +54,24 @@ export const postLogout = async (): Promise<boolean> => {
   return apiHandlerOK(res);
 }
 
+export const postLogin = async (email: string, password: string): Promise<boolean> => {
+  const res = instance.post(
+    '/api/login',
+    new URLSearchParams({ email, password }),
+    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+  );
+  return apiHandlerOK(res);
+}
+
+export const postRegister = async (email: string, password: string): Promise<boolean> => {
+  const res = instance.post(
+    '/api/register',
+    new URLSearchParams({ email, password }),
+    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+  );
+  return apiHandlerOK(res);
+}
+
 export const postFavorite = async (itemId: string): Promise<MediaItem> => {
   const res = instance.post(`/api/media/${itemId}/favorite`)
   return apiHandler(res);
@@ -86,4 +104,3 @@ export const undoDelete = async (): Promise<MediaItem> => {
   const res = instance.post('/api/undo');
   return apiHandler(res);
 }
-

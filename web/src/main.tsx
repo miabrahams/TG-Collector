@@ -1,29 +1,20 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import App from './App.tsx'
-import ThemeProvider from '@shared/components/ThemeProvider'
+import { render } from 'solid-js/web';
+import { QueryClientProvider } from '@tanstack/solid-query';
+import App from './app/App';
+import { queryClient } from './app/queryClient';
+import './shared/style/global.css';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
+const root = document.getElementById('root');
 
+if (!root) {
+  throw new Error('Missing root element');
+}
 
-const useDevtools = import.meta.env.MODE === 'development' && false;
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+render(
+  () => (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-      {useDevtools? <ReactQueryDevtools initialIsOpen={false} /> : null}
+      <App />
     </QueryClientProvider>
-  </StrictMode>,
-)
+  ),
+  root
+);
