@@ -35,5 +35,5 @@ def find_web_preview(message: Message) -> MediaItem | None:
         return None
     if page.document.mime_type == "video/mp4":
         download_target = page.document
-        return MediaItem(download_target, download_target.id, True)  # has mime_type
+        return MediaItem(download_target, download_target.id, True, page.document.mime_type)  # has mime_type
     return None
