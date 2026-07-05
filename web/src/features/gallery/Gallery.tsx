@@ -69,7 +69,7 @@ const Gallery = () => {
         <section class="relative">
           <div class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,360px),1fr))] gap-4">
             <For each={gallery.data}>
-              {(mediaItem) => <MediaCard itemId={mediaItem.id} />}
+              {(mediaItem) => <MediaCard item={mediaItem} />}
             </For>
           </div>
           <UndoButton />

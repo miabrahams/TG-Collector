@@ -3,7 +3,7 @@ import { Accessor } from 'solid-js';
 import { deletePage, getGalleryIds, getGalleryPage, getTotalPages } from '@shared/api/requests';
 import queryKeys from '@shared/api/queryKeys';
 import { ApiError } from '@shared/types/api';
-import { MediaID } from '@shared/types/media';
+import { MediaItem } from '@shared/types/media';
 import { SearchPreferences } from '@shared/types/preferences';
 
 export const useTotalPages = (preferences: Accessor<SearchPreferences>) => {
@@ -25,15 +25,10 @@ export const useGalleryIds = (preferences: Accessor<SearchPreferences>, page: Ac
 };
 
 const fetchGalleryPage = async (
-  queryClient: QueryClient,
   preferences: SearchPreferences,
   page: number
 ) => {
-  const gallery = await getGalleryPage(preferences, page);
-  gallery.forEach((mediaItem) => {
-    queryClient.setQueryData(queryKeys.media.item(mediaItem.id), mediaItem);
-  });
-  return gallery.map((item) => ({ id: item.id }));
+  return getGalleryPage(preferences, page);
 };
 
 const prefetchGalleryPage = (
@@ -45,19 +40,26 @@ const prefetchGalleryPage = (
 
   queryClient.prefetchQuery({
     queryKey: queryKeys.gallery.ids(preferences, page),
-    queryFn: () => fetchGalleryPage(queryClient, preferences, page),
+    queryFn: () => fetchGalleryPage(preferences, page),
   });
 };
 
 export const useGallery = (preferences: Accessor<SearchPreferences>, page: Accessor<number>) => {
   const queryClient = useQueryClient();
 
-  return createQuery<MediaID[], ApiError>(() => ({
+  return createQuery<MediaItem[], ApiError>(() => ({
     queryKey: queryKeys.gallery.ids(preferences(), page()),
     queryFn: async () => {
-      prefetchGalleryPage(queryClient, preferences(), page() - 1);
-      prefetchGalleryPage(queryClient, preferences(), page() + 1);
-      return fetchGalleryPage(queryClient, preferences(), page());
+      const currentPreferences = preferences();
+      const currentPage = page();
+      const gallery = await fetchGalleryPage(currentPreferences, currentPage);
+
+      window.setTimeout(() => {
+        prefetchGalleryPage(queryClient, currentPreferences, currentPage - 1);
+        prefetchGalleryPage(queryClient, currentPreferences, currentPage + 1);
+      }, 0);
+
+      return gallery;
     },
     staleTime: Infinity,
   }));

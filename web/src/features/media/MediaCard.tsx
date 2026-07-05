@@ -1,7 +1,7 @@
 import { Download, Play, Star, Trash2 } from 'lucide-solid';
 import { createSignal, Show } from 'solid-js';
 import { currentPage, setContextMenu, setFullscreenItem } from '@gallery/state';
-import { useGalleryMutations, useMediaItem, useVideoThumbnail } from './api';
+import { useGalleryMutations, useVideoThumbnail } from './api';
 import { hideInfo, searchPreferences } from '@preferences/state';
 import { MediaItem } from '@shared/types/media';
 import styles from './media-card.module.css';
@@ -10,8 +10,7 @@ const imageTypes = new Set(['image', 'photo', 'jpeg', 'png', 'gif']);
 
 const isMobileViewport = () => window.matchMedia('(max-width: 768px)').matches;
 
-const MediaCard = (props: { itemId: string }) => {
-  const item = useMediaItem(() => props.itemId);
+const MediaCard = (props: { item: MediaItem }) => {
   const [hovering, setHovering] = createSignal(false);
 
   return (
@@ -22,37 +21,14 @@ const MediaCard = (props: { itemId: string }) => {
       onMouseLeave={() => setHovering(false)}
       onContextMenu={(event) => {
         event.preventDefault();
-        if (item.data) {
-          setContextMenu({ x: event.clientX, y: event.clientY, item: item.data });
-        }
+        setContextMenu({ x: event.clientX, y: event.clientY, item: props.item });
       }}
     >
-      <Show when={item.isLoading}>
-        <div class="flex aspect-square items-center justify-center text-sm text-[rgb(var(--color-muted))]">Loading...</div>
+      <MediaPreview item={props.item} />
+      <Show when={!hideInfo()}>
+        <MediaInfo item={props.item} />
       </Show>
-
-      <Show when={item.error}>
-        {(error) => (
-          <div class="flex aspect-square flex-col items-center justify-center gap-3 p-4 text-center text-sm text-red-600">
-            <span>Error loading media: {error().message}</span>
-            <button type="button" class="btn-secondary" onClick={() => window.location.reload()}>
-              Retry
-            </button>
-          </div>
-        )}
-      </Show>
-
-      <Show when={item.data}>
-        {(mediaItem) => (
-          <>
-            <MediaPreview item={mediaItem()} />
-            <Show when={!hideInfo()}>
-              <MediaInfo item={mediaItem()} />
-            </Show>
-            <MediaActions item={mediaItem()} visible={hovering()} />
-          </>
-        )}
-      </Show>
+      <MediaActions item={props.item} visible={hovering()} />
     </article>
   );
 };
@@ -124,6 +100,7 @@ const VideoPreview = (props: { item: MediaItem; onOpen: () => void }) => {
         poster={thumbnail.isSuccess ? `/thumbnails/${thumbnail.data.fileName}` : undefined}
         class={styles.mediaFit}
         muted
+        preload="none"
         playsinline
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
